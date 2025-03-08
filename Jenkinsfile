@@ -31,7 +31,7 @@ pipeline {
     agent any
     environment {
         // Configuración para el segundo repositorio (se puede modificar fácilmente)
-        SECOND_JOB_NAME = "https://jenkins.midominio.net/job/SegundoRepositorio/job/main/"  // Nombre del job a disparar
+        SECOND_JOB_NAME = "Detonado_detonado_main"  // Nombre del job a disparar
         WAIT_TIMEOUT   = "120"                     // Tiempo de espera en segundos
     }
     stages {
