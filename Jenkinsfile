@@ -1,56 +1,51 @@
-// Configuración del trigger para recibir el webhook a través del plugin Generic Webhook Trigger Plugin
-properties([
-  pipelineTriggers([
-    [
-      $class: 'GenericTrigger',
-      genericVariables: [
-         [key: 'HOOK_JOB_NUMBER', value: '$.jobNumber'],
-         [key: 'HOOK_REPO',       value: '$.repo'],
-         [key: 'HOOK_DURATION',   value: '$.duration'],
-         [key: 'HOOK_STATUS',     value: '$.status']
-      ],
-      causeString: 'Triggered by webhook callback',
-      token: 'myToken', // Debe coincidir con el token que usará el segundo pipeline
-      printContributedVariables: true,
-      printPostContent: true
-    ]
-  ])
-])
-
 pipeline {
     agent any
     environment {
-        // Configuración para disparar el segundo repositorio (multibranch)
-        // Se debe usar la ruta interna, por ejemplo "SegundoRepositorio/master"
-        SECOND_JOB_NAME = "Detonado/detonado/develop"
-        // Nota: este job se dispara de forma asíncrona y la información del callback se recibirá en otra ejecución
-        WAIT_TIMEOUT   = "120"
+        // Token predefinido para el callback
+        WEBHOOK_TOKEN = 'myToken'
+        // URL base (según tu configuración de Jenkins) para el endpoint del webhook.
+        // Nota: La URL del endpoint dependerá de cómo el plugin Webhook Step exponga el listener.
+        WEBHOOK_ENDPOINT = "https://jenkins.moradores.es/webhook"
     }
     stages {
-        stage('Disparar Segundo Pipeline') {
+        stage('Lanzar Segundo Pipeline') {
             steps {
                 script {
-                    echo "Disparando Segundo Pipeline..."
-                    // Se dispara el segundo pipeline sin esperar su finalización.
-                    build job: env.SECOND_JOB_NAME, wait: false
-                    echo "El segundo pipeline se ha disparado; espere a que el callback dispare este job nuevamente con los datos."
+                    echo "Lanzando el segundo pipeline..."
+                    // Se dispara el segundo pipeline de forma asíncrona y se le pasa el token
+                    build job: "SegundoRepositorio/master", 
+                          parameters: [string(name: 'WEBHOOK_TOKEN', value: env.WEBHOOK_TOKEN)],
+                          wait: false
                 }
             }
         }
-        stage('Mostrar información del Callback (Webhook)') {
+        stage('Continuar procesamiento') {
+            steps {
+                echo "El primer pipeline continúa con otras tareas..."
+                // Simulación de otras tareas
+                sleep time: 3, unit: 'SECONDS'
+            }
+        }
+        stage('Esperar Callback del Segundo Pipeline') {
             steps {
                 script {
-                    // Si este build fue disparado vía webhook, se tendrán definidos los parámetros HOOK_*
-                    if (env.HOOK_JOB_NUMBER) {
-                        echo "Información recibida vía webhook:"
-                        echo "Job Number: ${env.HOOK_JOB_NUMBER}"
-                        echo "Repo: ${env.HOOK_REPO}"
-                        echo "Duration: ${env.HOOK_DURATION} seg"
-                        echo "Status: ${env.HOOK_STATUS}"
-                    } else {
-                        echo "Esta ejecución no recibió datos vía webhook."
-                    }
+                    echo "Esperando callback en el endpoint ${env.WEBHOOK_ENDPOINT}?token=${env.WEBHOOK_TOKEN}"
+                    // Aquí se utiliza el step proporcionado por el plugin Webhook Step para esperar el callback.
+                    // La sintaxis depende de la versión del plugin; en este ejemplo se asume un step llamado waitForWebhook.
+                    def callbackData = waitForWebhook(
+                        token: env.WEBHOOK_TOKEN,
+                        timeout: 120 // en segundos
+                    )
+                    echo "Callback recibido: ${callbackData}"
+                    // Puedes asignar la información recibida a una variable de entorno o procesarla según necesites.
+                    env.CALLBACK_DATA = callbackData
                 }
+            }
+        }
+        stage('Mostrar Información del Segundo Pipeline') {
+            steps {
+                echo "Datos recibidos del segundo pipeline:"
+                echo "${env.CALLBACK_DATA}"
             }
         }
     }
