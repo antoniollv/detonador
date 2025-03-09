@@ -1,53 +1,45 @@
 pipeline {
     agent any
     environment {
-        // Token predefinido para el callback
-        WEBHOOK_TOKEN = 'myToken'
-        // URL base (según tu configuración de Jenkins) para el endpoint del webhook.
-        // Nota: La URL del endpoint dependerá de cómo el plugin Webhook Step exponga el listener.
-        WEBHOOK_ENDPOINT = 'https://jenkins.moradores.es/webhook'
         LAUNCH_JOB_NAME = 'Detonado/detonado/develop'
-        WAIT_TIMEOUT   = '120'
+        WAIT_TIMEOUT = '120'
     }
     stages {
-        stage('Lanzar Segundo Pipeline') {
+        stage('Registart WebHook') {
             steps {
                 script {
-                    echo 'Lanzando el segundo pipeline...'
-                    // Se dispara el segundo pipeline de forma asíncrona y se le pasa el token
-                    build job: env.LAUNCH_JOB_NAME,
-                          parameters: [string(name: 'WEBHOOK_TOKEN', value: env.WEBHOOK_TOKEN)],
-                          wait: false
+                    withCredentials([string(credentialsId: 'jenkins-api-credentials', variable: 'SECRET')]) {
+                        hook = registerWebhook(token: 'webhook', authToken: SECRET)
+                        echo "Waiting for POST to ${hook.url}"
+                    }
+                    parallel {
+                        stage ('Launch Job') {
+                            steps {
+                                script {
+                                    build job: env.LAUNCH_JOB_NAME,
+                                    parameters: [string(name: 'CALLBACK_URL', value: env.CALLBACK_URL)],
+                                    wait: false
+                                }
+                            }
+                        }
+                        stage('Continuar procesamiento') {
+                            steps {
+                                echo 'El primer pipeline continúa con otras tareas...'
+                                // Simulación de otras tareas
+                                sleep time: 3, unit: 'SECONDS'
+                            }
+                        }
+                        stage('Esperar Callback del Segundo Pipeline') {
+                            steps {
+                                script {
+                                    echo "Waiting for POST to ${callbackURL}"
+                                    data = waitForWebhook hook
+                                    echo "Callback recibido: ${data}"
+                                }
+                            }
+                        }
+                    }
                 }
-            }
-        }
-        stage('Continuar procesamiento') {
-            steps {
-                echo 'El primer pipeline continúa con otras tareas...'
-                // Simulación de otras tareas
-                sleep time: 3, unit: 'SECONDS'
-            }
-        }
-        stage('Esperar Callback del Segundo Pipeline') {
-            steps {
-                script {
-                    echo "Esperando callback en el endpoint ${env.WEBHOOK_ENDPOINT}?token=${env.WEBHOOK_TOKEN}"
-                    // Aquí se utiliza el step proporcionado por el plugin Webhook Step para esperar el callback.
-                    // La sintaxis depende de la versión del plugin; en este ejemplo se asume un step llamado waitForWebhook.
-                    def callbackData = waitForWebhook(
-                        token: env.WEBHOOK_TOKEN,
-                        timeout: env.WAIT_TIMEOUT // en segundos
-                    )
-                    echo "Callback recibido: ${callbackData}"
-                    // Puedes asignar la información recibida a una variable de entorno o procesarla según necesites.
-                    env.CALLBACK_DATA = callbackData
-                }
-            }
-        }
-        stage('Mostrar Información del Segundo Pipeline') {
-            steps {
-                echo 'Datos recibidos del segundo pipeline:'
-                echo "${env.CALLBACK_DATA}"
             }
         }
     }
