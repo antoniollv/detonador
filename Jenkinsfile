@@ -36,7 +36,7 @@ pipeline {
                     // La sintaxis depende de la versión del plugin; en este ejemplo se asume un step llamado waitForWebhook.
                     def callbackData = waitForWebhook(
                         token: env.WEBHOOK_TOKEN,
-                        timeout: env.WAIT_TIMEOUT.toInteger() // en segundos
+                        timeout: env.WAIT_TIMEOUT // en segundos
                     )
                     echo "Callback recibido: ${callbackData}"
                     // Puedes asignar la información recibida a una variable de entorno o procesarla según necesites.
