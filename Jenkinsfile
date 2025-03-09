@@ -5,15 +5,17 @@ pipeline {
         WEBHOOK_TOKEN = 'myToken'
         // URL base (según tu configuración de Jenkins) para el endpoint del webhook.
         // Nota: La URL del endpoint dependerá de cómo el plugin Webhook Step exponga el listener.
-        WEBHOOK_ENDPOINT = "https://jenkins.moradores.es/webhook"
+        WEBHOOK_ENDPOINT = 'https://jenkins.moradores.es/webhook'
+        LAUNCH_JOB_NAME = 'Detonado/detonado/develop'
+        WAIT_TIMEOUT   = '120'
     }
     stages {
         stage('Lanzar Segundo Pipeline') {
             steps {
                 script {
-                    echo "Lanzando el segundo pipeline..."
+                    echo 'Lanzando el segundo pipeline...'
                     // Se dispara el segundo pipeline de forma asíncrona y se le pasa el token
-                    build job: "SegundoRepositorio/master", 
+                    build job: env.LAUNCH_JOB_NAME,
                           parameters: [string(name: 'WEBHOOK_TOKEN', value: env.WEBHOOK_TOKEN)],
                           wait: false
                 }
@@ -21,7 +23,7 @@ pipeline {
         }
         stage('Continuar procesamiento') {
             steps {
-                echo "El primer pipeline continúa con otras tareas..."
+                echo 'El primer pipeline continúa con otras tareas...'
                 // Simulación de otras tareas
                 sleep time: 3, unit: 'SECONDS'
             }
@@ -34,7 +36,7 @@ pipeline {
                     // La sintaxis depende de la versión del plugin; en este ejemplo se asume un step llamado waitForWebhook.
                     def callbackData = waitForWebhook(
                         token: env.WEBHOOK_TOKEN,
-                        timeout: 120 // en segundos
+                        timeout: env.WAIT_TIMEOUT.toInteger // en segundos
                     )
                     echo "Callback recibido: ${callbackData}"
                     // Puedes asignar la información recibida a una variable de entorno o procesarla según necesites.
@@ -44,7 +46,7 @@ pipeline {
         }
         stage('Mostrar Información del Segundo Pipeline') {
             steps {
-                echo "Datos recibidos del segundo pipeline:"
+                echo 'Datos recibidos del segundo pipeline:'
                 echo "${env.CALLBACK_DATA}"
             }
         }
