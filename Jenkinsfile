@@ -39,7 +39,7 @@ pipeline {
             steps {
                 script {
                     // Se invoca la función para disparar y esperar el segundo pipeline
-                    def jobInfo = triggerSecondJob(env.LAUNCH_JOB_NAME, WAIT_TIMEOUT.toInteger())
+                    def jobInfo = triggerJob(env.LAUNCH_JOB_NAME, WAIT_TIMEOUT.toInteger())
                     // Se guarda la información para mostrarla posteriormente
                     env.LAUNCH_JOB_INFO = jobInfo
                 }
