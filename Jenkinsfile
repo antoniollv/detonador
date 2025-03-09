@@ -1,5 +1,5 @@
-// Función para lanzar el job del segundo repositorio y esperar su resultado
-def triggerSecondJob(jobName, timeoutSeconds) {
+// Función para lanzar un job en otro repositorio y esperar su resultado
+def triggerJob(jobName, timeoutSeconds) {
     def resultMap = [:]
     try {
         // Se espera el resultado del job, con un timeout configurado
@@ -31,7 +31,7 @@ pipeline {
     agent any
     environment {
         // Configuración para el segundo repositorio (se puede modificar fácilmente)
-        SECOND_JOB_NAME = "Detonado/detonado/main"  // Nombre del job a disparar
+        LAUNCH_JOB_NAME = "Detonado/detonado/main"  // Nombre del job a disparar
         WAIT_TIMEOUT   = "120"                     // Tiempo de espera en segundos
     }
     stages {
@@ -39,16 +39,16 @@ pipeline {
             steps {
                 script {
                     // Se invoca la función para disparar y esperar el segundo pipeline
-                    def jobInfo = triggerSecondJob(env.SECOND_JOB_NAME, WAIT_TIMEOUT.toInteger())
+                    def jobInfo = triggerSecondJob(env.LAUNCH_JOB_NAME, WAIT_TIMEOUT.toInteger())
                     // Se guarda la información para mostrarla posteriormente
-                    env.SECOND_JOB_INFO = jobInfo
+                    env.LAUNCH_JOB_INFO = jobInfo
                 }
             }
         }
         stage('Mostrar información del Segundo Pipeline') {
             steps {
                 echo "Información del Segundo Pipeline:"
-                echo "${env.SECOND_JOB_INFO}"
+                echo "${env.LAUNCH_JOB_INFO}"
             }
         }
     }
