@@ -12,9 +12,9 @@ pipeline {
                         hook = registerWebhook(token: 'webhook', authToken: SECRET)
                         echo "Waiting for POST to ${hook.url}"
                         build job: env.LAUNCH_JOB_NAME,
-                            parameters: [string(name: 'CALLBACK_URL', value: env.CALLBACK_URL)],
+                            parameters: [string(name: 'CALLBACK_URL', value: hook.url)],
                             wait: false
-                        echo "Waiting for POST to ${callbackURL}"
+                        echo "Waiting for POST to ${hook.url}"
                         data = waitForWebhook hook
                         echo "Callback recibido: ${data}"
                     }
